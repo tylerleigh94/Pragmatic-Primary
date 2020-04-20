@@ -1,6 +1,7 @@
 ####Libraries####
 library(easypackages)
-libs<-c("tidyverse", "haven", "naniar", "ggplot2", "car", "psych", "labelled", "PKPDmisc")
+libs<-c("tidyverse", "haven", "naniar", "ggplot2", "car", "psych", "labelled", "PKPDmisc", "lubridate", 
+        "stargazer", "plm")
 libraries(libs)
 ####Import the Data####
 dat.4 <- read_sav("Data/s7991_UPenn_LongPollW4_FINAL_WEIGHTED_client_7.11.2019.sav")
@@ -614,6 +615,10 @@ for(x in 1:nrow(dat)){
   else{dat$strat_4[x]<-0}
 }
 
+##Remove anyone who can't be definitively classified
+dat$strat_4<-ifelse(dat$DEM1_W4<=4, dat$strat_4, NA)
+
+
 dat$strat_5<-NA
 for(x in 1:nrow(dat)){
   if(is.na(dat$vote.electable_5[x]) | is.na(dat$vote.therm_5[x]) | is.na(dat$vote.viable_5[x]) | 
@@ -624,6 +629,9 @@ for(x in 1:nrow(dat)){
   {dat$strat_5[x]<-1}
   else{dat$strat_5[x]<-0}
 }
+
+##Remove anyone who can't be definitively classified
+dat$strat_5<-ifelse(dat$DEM1_W5<=5, dat$strat_5, NA)
 
 # Indicator for voting for someone not in the top 4 candidates (1= voted for someone not in top 4) (WAVE 4)
 dat$not.top4_4<-ifelse(dat$DEM1_W4>4, 1, 0)
@@ -669,6 +677,13 @@ dat$vote.r_5 <- car::recode(dat$DEM1_W5, "1=1; 2=2; 3=4; 4=6; 5=11; 6=12; 7=8; 8
 
 dat$vote.change <- ifelse(dat$vote.r_4==dat$vote.r_5, 0, 1)
 
+# Separate sample halves by date
+dat$end.date_4 <- ymd_hms(dat$ENDDT_W4)
+dat$end.date_5 <- ymd_hms(dat$ENDDT_W5)
+
+dat$second.half_5 <- ifelse(dat$wave45_W5==1 & dat$end.date_5<ymd("2020-03-04"), 0, 
+                            ifelse(dat$wave45_W5==1 & dat$end.date_5>ymd("2020-03-04"), 1, NA))
+
 ####Analyses####
 
 # Cross sectional prevalence of Strategic Voting
@@ -676,30 +691,30 @@ t.test(dat$strat_4[dat$wave45_W4==1])
 t.test(dat$strat_5[dat$wave45_W5==1])
 t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$wave45_W5==1])
 
-t.test(dat$strat_5[dat$REPLICATE_W5==1])
-t.test(dat$strat_5[dat$REPLICATE_W5==2])
-t.test(dat$strat_5[dat$REPLICATE_W5==1], dat$strat_5[dat$REPLICATE_W5==2])
+t.test(dat$strat_5[dat$second.half_5==0])
+t.test(dat$strat_5[dat$second.half_5==1])
+t.test(dat$strat_5[dat$second.half_5==0], dat$strat_5[dat$second.half_5==1])
 
-t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$REPLICATE_W5==1])
-t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$REPLICATE_W5==2])
+t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$second.half_5==0])
+t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$second.half_5==1])
 
 #Who are strategic voters voting for?
 prop.table(table(dat$strat_4[dat$wave45_W4==1], dat$DEM1_W4[dat$wave45_W4==1]), 1)
 prop.table(table(dat$strat_5[dat$wave45_W5==1], dat$DEM1_W5[dat$wave45_W5==1]), 1)
 
 # Prep data for export to stata for fixed effects
-dat.out5a<-dat[dat$REPLICATE_W5==1,] %>%
+dat.out5a<-dat[dat$second.half_5==0,] %>%
   dplyr::select(CaseId, strat_4, strat_5, dist.top_5, dist.top_4, elec.top_4, 
-                elec.top_5, via.top_4, via.top_5, top.vote.therm_4, top.vote.therm_5, ppol.ind_4,
+                elec.top_5, via.top_4, via.top_5, therm.max.val_4, therm.max.val_5, ppol.ind_4,
                 ppol.ind_5, vote.via.c_4, vote.via.c_5, ideo_4, ideo_5, interest_5, interest_4, 
                 civil.ind_4, civil.ind_5, ideo.x_4, ideo.x_5, iss.pol_4, iss.pol_5) %>%
   pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep = "_")
 
 dat.out5a <- dat.out5a[!is.na(dat.out5a$CaseId),]
 
-dat.out5b<-dat[dat$REPLICATE_W5==2,] %>%
+dat.out5b<-dat[dat$second.half_5==1,] %>%
   dplyr::select(CaseId, strat_4, strat_5, dist.top_5, dist.top_4, elec.top_4, 
-                elec.top_5, via.top_4, via.top_5, top.vote.therm_4, top.vote.therm_5, ppol.ind_4,
+                elec.top_5, via.top_4, via.top_5, therm.max.val_4, therm.max.val_5, ppol.ind_4,
                 ppol.ind_5, vote.via.c_4, vote.via.c_5, ideo_4, ideo_5, interest_5, interest_4, 
                 civil.ind_4, civil.ind_5, ideo.x_4, ideo.x_5, iss.pol_4, iss.pol_5) %>%
   pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep = "_")
@@ -717,6 +732,73 @@ foreign::write.dta(dat.out5b, file="Prag Primary 4-5b.dta")
 prop.table(table(dat$strat.change, dat$vote.change),1)
 prop.table(table(dat$strat.change[dat$strat_5==1]))
 prop.table(table(dat$strat.change[dat$strat_4==1]))
+
+#What predicts Strategic Voting?
+
+m.predictors_4<-glm(strat_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+ideo.x_4+P_PARTYID7_W4+interest_4+factor(DEM1_W4), 
+    family='binomial', data=dat[dat$wave45_W4==1,])
+
+m.predictors_5a<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W4), 
+                    family='binomial', data=dat[dat$second.half_5==0,])
+
+m.predictors_5b<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W4), 
+                     family='binomial', data=dat[dat$second.half_5==1,])
+
+stargazer(m.predictors_4)
+stargazer(m.predictors_5a)
+stargazer(m.predictors_5b)
+stargazer(m.predictors_4, m.predictors_5a, m.predictors_5b)
+
+# What Predicts Change in Strategic Voting?
+
+m.strat5a<-plm(formula=strat~dist_top+elec_top+via_top+therm_max_val+ppol_ind+vote_via_c+ideo+interest+civil_ind+ideo_x+iss_pol,
+    data=dat.out5a, model='within', index='CaseId', type='individual')
+
+m.strat5b<-plm(formula=strat~dist_top+elec_top+via_top+therm_max_val+ppol_ind+vote_via_c+ideo+interest+civil_ind+ideo_x+iss_pol,
+               data=dat.out5b, model='within', index='CaseId', type='individual')
+
+stargazer(m.strat5a, m.strat5b)
+stargazer(m.strat5b)
+
+# What led to increase in Biden support?
+
+dat.biden5a <- dat[dat$second.half_5==0,] %>%
+  select(CaseId, interest_4, interest_5, elect.biden_4, elect.biden_5, via.biden_4, via.biden_5, 
+         thermr.biden_4, thermr.biden_5, biden.dist_4, biden.dist_5, via.top_4, via.top_5, elect.sanders_4,
+         elect.sanders_5, via.sanders_5, via.sanders_4, thermr.sanders_4, thermr.sanders_5, sanders.dist_4,
+         sanders.dist_5, vote.biden_4, vote.biden_5) %>%
+  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep="_")
+
+dat.biden5a <- dat.biden5a[!is.na(dat.biden5a$CaseId),]
+
+
+dat.biden5b <- dat[dat$second.half_5==1,] %>%
+  select(CaseId, interest_4, interest_5, elect.biden_4, elect.biden_5, via.biden_4, via.biden_5, 
+         thermr.biden_4, thermr.biden_5, biden.dist_4, biden.dist_5, via.top_4, via.top_5, elect.sanders_4,
+         elect.sanders_5, via.sanders_5, via.sanders_4, thermr.sanders_4, thermr.sanders_5, sanders.dist_4,
+         sanders.dist_5, vote.biden_4, vote.biden_5) %>%
+  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep="_")
+
+dat.biden5b <- dat.biden5b[!is.na(dat.biden5b$CaseId),]
+
+m.biden5a<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top, data=dat.biden5a,
+    model='within', index='CaseId', type='individual')
+
+m.biden5b<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top, data=dat.biden5b,
+               model='within', index='CaseId', type='individual')
+
+m2.biden5a<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top+elect.sanders+via.sanders+thermr.sanders+sanders.dist, 
+                data=dat.biden5a, model='within', index='CaseId', type='individual')
+
+m2.biden5b<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top+elect.sanders+via.sanders+thermr.sanders+sanders.dist, 
+                data=dat.biden5b, model='within', index='CaseId', type='individual')
+
+colnames(dat.biden5a) <- gsub("\\.", "_", colnames(dat.biden5a))
+foreign::write.dta(dat.biden5a, file="Biden 4-5a.dta")
+
+colnames(dat.biden5b) <- gsub("\\.", "_", colnames(dat.biden5b))
+foreign::write.dta(dat.biden5b, file="Biden 4-5b.dta")
+
 
 
 
