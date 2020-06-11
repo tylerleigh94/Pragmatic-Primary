@@ -1,3 +1,9 @@
+---
+title: "FT Distribution Output"
+output: pdf_document
+---
+
+```{r include=F}
 ####Libraries####
 library(easypackages)
 libs<-c("tidyverse", "haven", "naniar", "ggplot2", "car", "psych", "labelled", "PKPDmisc", "lubridate", 
@@ -847,131 +853,10 @@ for(x in 1:nrow(dat)){
   else{dat$biden.dist.rel_5[x]<-which(dat$biden.dist_5[x]==sort(working.vect))}
   
 }
-####Analyses####
 
-#Percentage of Respondents voting Strategically
-##Electability
-mean(dat$strat.elect_4, na.rm=T)
-mean(dat$strat.elect_5[dat$second.half_5==0], na.rm=T)
-mean(dat$strat.elect_5[dat$second.half_5==1], na.rm=T)
+```
 
-##Viability
-mean(dat$strat.via_4, na.rm=T)
-mean(dat$strat.via_5[dat$second.half_5==0], na.rm=T)
-mean(dat$strat.via_5[dat$second.half_5==1], na.rm=T)
-
-##Combined E/V
-mean(dat$strat.ev_4, na.rm=T)
-mean(dat$strat.ev_5[dat$second.half_5==0], na.rm=T)
-mean(dat$strat.ev_5[dat$second.half_5==1], na.rm=T)
-
-##Percent of Electability nd Viability Strat Voters who are Combined EV Voters
-mean(dat$strat.ev_4[dat$strat.elect_4==1], na.rm=T)
-mean(dat$strat.ev_5[(dat$strat.elect_5==1 & dat$second.half_5==0)], na.rm=T)
-mean(dat$strat.ev_5[(dat$strat.elect_5==1 & dat$second.half_5==1)], na.rm=T)
-
-mean(dat$strat.ev_4[dat$strat.via_4==1], na.rm=T)
-mean(dat$strat.ev_5[(dat$strat.via_5==1 & dat$second.half_5==0)], na.rm=T)
-mean(dat$strat.ev_5[(dat$strat.via_5==1 & dat$second.half_5==1)], na.rm=T)
-
-#Who are strategic voters voting for?
-prop.table(table(dat$strat_4[dat$wave45_W4==1], dat$DEM1_W4[dat$wave45_W4==1]), 1)
-prop.table(table(dat$strat_5[dat$wave45_W5==1], dat$DEM1_W5[dat$wave45_W5==1]), 1)
-
-# Prep data for export to stata for fixed effects
-dat.out5a<-dat[dat$second.half_5==0,] %>%
-  dplyr::select(CaseId, strat_4, strat_5, dist.top_5, dist.top_4, elec.top_4, 
-                elec.top_5, via.top_4, via.top_5, therm.max.val_4, therm.max.val_5, ppol.ind_4,
-                ppol.ind_5, vote.via.c_4, vote.via.c_5, ideo_4, ideo_5, interest_5, interest_4, 
-                civil.ind_4, civil.ind_5, ideo.x_4, ideo.x_5, iss.pol_4, iss.pol_5) %>%
-  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep = "_")
-
-dat.out5a <- dat.out5a[!is.na(dat.out5a$CaseId),]
-
-dat.out5b<-dat[dat$second.half_5==1,] %>%
-  dplyr::select(CaseId, strat_4, strat_5, dist.top_5, dist.top_4, elec.top_4, 
-                elec.top_5, via.top_4, via.top_5, therm.max.val_4, therm.max.val_5, ppol.ind_4,
-                ppol.ind_5, vote.via.c_4, vote.via.c_5, ideo_4, ideo_5, interest_5, interest_4, 
-                civil.ind_4, civil.ind_5, ideo.x_4, ideo.x_5, iss.pol_4, iss.pol_5) %>%
-  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep = "_")
-
-dat.out5b <- dat.out5b[!is.na(dat.out5b$CaseId),]
-
-colnames(dat.out5a) <- gsub("\\.", "_", colnames(dat.out5a))
-foreign::write.dta(dat.out5a, file="Prag Primary 4-5a.dta")
-
-colnames(dat.out5b) <- gsub("\\.", "_", colnames(dat.out5b))
-foreign::write.dta(dat.out5b, file="Prag Primary 4-5b.dta")
-
-# Are people who change strategic voting behavior changing their votes?
-
-prop.table(table(dat$strat.change, dat$vote.change),1)
-prop.table(table(dat$strat.change[dat$strat_5==1]))
-prop.table(table(dat$strat.change[dat$strat_4==1]))
-
-
-# What led to increase in Biden support?
-
-dat.biden5a <- dat[dat$second.half_5==0,] %>%
-  select(CaseId, interest_4, interest_5, elect.biden_4, elect.biden_5, via.biden_4, via.biden_5, 
-         therm10.biden_4, therm10.biden_5, biden.dist_4, biden.dist_5, via.top_4, via.top_5, elect.sanders_4,
-         elect.sanders_5, via.sanders_5, via.sanders_4, thermr.sanders_4, thermr.sanders_5, sanders.dist_4,
-         sanders.dist_5, vote.biden_4, vote.biden_5) %>%
-  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep="_")
-
-dat.biden5a <- dat.biden5a[!is.na(dat.biden5a$CaseId),]
-
-
-dat.biden5b <- dat[dat$second.half_5==1,] %>%
-  select(CaseId, interest_4, interest_5, elect.biden_4, elect.biden_5, via.biden_4, via.biden_5, 
-         therm10.biden_4, therm10.biden_5, biden.dist_4, biden.dist_5, via.top_4, via.top_5, elect.sanders_4,
-         elect.sanders_5, via.sanders_5, via.sanders_4, thermr.sanders_4, thermr.sanders_5, sanders.dist_4,
-         sanders.dist_5, vote.biden_4, vote.biden_5) %>%
-  pivot_longer(-CaseId, names_to = c(".value", "wave"), names_sep="_")
-
-dat.biden5b <- dat.biden5b[!is.na(dat.biden5b$CaseId),]
-
-m.biden5a<-plm(formula=vote.biden~elect.biden+via.biden+therm10.biden+biden.dist, data=dat.biden5a,
-    model='within', index='CaseId', type='individual')
-
-m.biden5b<-plm(formula=vote.biden~elect.biden+via.biden+therm10.biden+biden.dist, data=dat.biden5b,
-               model='within', index='CaseId', type='individual')
-
-summary(m.biden5a)
-summary(m.biden5b)
-
-stargazer(m.biden5a, m.biden5b, star.cutoffs = c(.05, .01, .001), 
-          covariate.labels = c("Biden Electability", "Biden Viability", "Biden FT", "Biden Ideo Distance"))
-
-colnames(dat.biden5a) <- gsub("\\.", "_", colnames(dat.biden5a))
-foreign::write.dta(dat.biden5a, file="Biden 4-5a.dta")
-
-colnames(dat.biden5b) <- gsub("\\.", "_", colnames(dat.biden5b))
-foreign::write.dta(dat.biden5b, file="Biden 4-5b.dta")
-
-# Does threat, disliking trump, or polarization predict electability-based strategic voting?
-
-m.elect.strat_4<-glm(strat.elect_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+interest_4+iss.pol_4+therm10.trump_4+way.life.threat_4, 
-                      family='binomial', data=dat[(dat$wave45_W4==1  & dat$outlier_4==0),])
-
-m.elect.strat_5<-glm(strat.elect_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+interest_5+iss.pol_5+aff.pol_5+elite.ppolar_5+therm10.trump_5+way.life.threat_5, 
-                     family='binomial', data=dat[(dat$wave45_W5==1 & dat$outlier_5==0),])
-
-stargazer(m.elect.strat_4, star.cutoffs = c(.05, .01, .001), 
-          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Ideo Extremity",  
-                               "Party ID", "Interest", "Issue Polar", "Perceived Polar",  
-                               "Trump Therm (10pt)", "Way of Life Threat"))
-
-stargazer(m.elect.strat_5, star.cutoffs = c(.05, .01, .001), 
-          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Ideo Extremity",  
-                               "Party ID", "Interest",  "Polar Index", 
-                               "Trump Therm (10pt)", "Way of Life Threat", "Second Half"))
-
-##Bivariate correlations with the DV
-###Wave 4
-
-
-# Therms with Outliers Removed
+```{r echo=F}
 hist(dat$therm10.trump_4[dat$outlier_4==0], ylab="Count", xlab="FT Score", main="Trump Therm (W4)")
 hist(dat$therm10.trump_5[dat$outlier_5==0 & dat$second.half_5==0], ylab="Count", xlab="FT Score", main="Trump Therm (W5A)")
 hist(dat$therm10.trump_5[dat$outlier_5==0 & dat$second.half_5==1], ylab="Count", xlab="FT Score", main="Trump Therm (W5B)")
@@ -996,78 +881,6 @@ hist(dat$therm10.buttigieg_5[dat$outlier_5==0 & dat$second.half_5==1], ylab="Cou
 hist(dat$therm10.bloomberg_5[dat$outlier_5==0 & dat$second.half_5==0], ylab="Count", xlab="FT Score", main="Bloomberg Therm (W5A)")
 hist(dat$therm10.bloomberg_5[dat$outlier_5==0 & dat$second.half_5==1], ylab="Count", xlab="FT Score", main="Bloomberg Therm (W5B)")
 
-# Outlier Descriptives
-summary(dat$white.dum_4[dat$outlier_4==1], na.rm=T)
-summary(dat$white.dum_5[dat$outlier_5==1 & dat$second.half_5==0], na.rm=T)
-summary(dat$white.dum_5[dat$outlier_5==1 & dat$second.half_5==1], na.rm=T)
-
-summary(dat$male.dum_4[dat$outlier_4==1], na.rm=T)
-summary(dat$male.dum_5[dat$outlier_5==1 & dat$second.half_5==0], na.rm=T)
-summary(dat$male.dum_5[dat$outlier_5==1 & dat$second.half_5==1], na.rm=T)
-
-summary(dat$P_PARTYID7_W4[dat$outlier_4==1], na.rm=T)
-summary(dat$P_PARTYID7_W5[dat$outlier_5==1 & dat$second.half_5==0], na.rm=T)
-summary(dat$P_PARTYID7_W5[dat$outlier_5==1 & dat$second.half_5==1], na.rm=T)
-
-#################################################
-####NOT USED####
-################
-# What Predicts Change in Strategic Voting?
-
-m.strat5a<-plm(formula=strat~dist_top+elec_top+via_top+therm_max_val+ppol_ind+vote_via_c+ideo+interest+civil_ind+ideo_x+iss_pol,
-               data=dat.out5a, model='within', index='CaseId', type='individual')
-
-m.strat5b<-plm(formula=strat~dist_top+elec_top+via_top+therm_max_val+ppol_ind+vote_via_c+ideo+interest+civil_ind+ideo_x+iss_pol,
-               data=dat.out5b, model='within', index='CaseId', type='individual')
-
-stargazer(m.strat5a, m.strat5b)
-stargazer(m.strat5b)
-
-# PRedictors of change in support for Biden
-m2.biden5a<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top+elect.sanders+via.sanders+thermr.sanders+sanders.dist, 
-                data=dat.biden5a, model='within', index='CaseId', type='individual')
-
-m2.biden5b<-plm(formula=vote.biden~interest+elect.biden+via.biden+thermr.biden+biden.dist+via.top+elect.sanders+via.sanders+thermr.sanders+sanders.dist, 
-                data=dat.biden5b, model='within', index='CaseId', type='individual')
-
-
-# Cross sectional prevalence of Strategic Voting
-t.test(dat$strat_4[dat$wave45_W4==1])
-t.test(dat$strat_5[dat$wave45_W5==1])
-t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$wave45_W5==1])
-
-t.test(dat$strat_5[dat$second.half_5==0])
-t.test(dat$strat_5[dat$second.half_5==1])
-t.test(dat$strat_5[dat$second.half_5==0], dat$strat_5[dat$second.half_5==1])
-
-t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$second.half_5==0])
-t.test(dat$strat_4[dat$wave45_W4==1], dat$strat_5[dat$second.half_5==1])
-
-#What predicts Strategic Voting?
-
-m.predictors_4<-glm(strat_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+ideo.x_4+P_PARTYID7_W4+interest_4+factor(DEM1_W4), 
-                    family='binomial', data=dat[dat$wave45_W4==1,])
-
-m.predictors_4.2<-glm(strat_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+ideo.x_4+P_PARTYID7_W4+interest_4+factor(DEM1_W4)+ppol.ind_4+thermr.trump_4+way.life.threat_4, 
-                      family='binomial', data=dat[dat$wave45_W4==1,])
-
-m.predictors_5a<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W5), 
-                     family='binomial', data=dat[dat$second.half_5==0,])
-
-m.predictors_5a.2<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W5)+ppol.ind_5+aff.pol_5+elite.ppolar_5+thermr.trump_5+way.life.threat_5, 
-                       family='binomial', data=dat[dat$second.half_5==0,])
-
-m.predictors_5b<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W5), 
-                     family='binomial', data=dat[dat$second.half_5==1,])
-
-m.predictors_5b.2<-glm(strat_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+ideo.x_5+P_PARTYID7_W5+interest_5+factor(DEM1_W5)+ppol.ind_5+aff.pol_5+elite.ppolar_5+thermr.trump_5+way.life.threat_5, 
-                       family='binomial', data=dat[dat$second.half_5==1,])
-
-stargazer(m.predictors_4)
-stargazer(m.predictors_5a)
-stargazer(m.predictors_5b)
-stargazer(m.predictors_4, m.predictors_5a, m.predictors_5b)
-stargazer(m.predictors_4.2)
-stargazer(m.predictors_5a.2, m.predictors_5b.2)
+```
 
 
