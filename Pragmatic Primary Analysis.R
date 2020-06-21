@@ -587,9 +587,9 @@ for(x in 1:nrow(dat)){
 
 dat$elec.top3_5<-NA
 for(x in 1:nrow(dat)){
-  if(dat$DEM1_W5[x] %in% dat$DEM5_W5[x]){dat$elec.top_5[x]=1}
-  else if(dat$DEM1_W5[x] %in% dat$DEM6_W5[x]){dat$elec.top_5[x]=.5}
-  else{dat$elec.top_5[x]=0}
+  if(dat$DEM1_W5[x] %in% dat$DEM5_W5[x]){dat$elec.top3_5[x]=1}
+  else if(dat$DEM1_W5[x] %in% dat$DEM6_W5[x]){dat$elec.top3_5[x]=.5}
+  else{dat$elec.top3_5[x]=0}
 }
 
 dat$elec.top_5<-NA
@@ -714,9 +714,9 @@ for(x in 1:nrow(dat)){
 
 dat$strat.elect3_5<-NA
 for(x in 1:nrow(dat)){
-  if(is.na(dat$elec.top_5[x]) | is.na(dat$elect.mostliked_5[x]) | is.na(dat$therm.tie_5[x])) {dat$strat.elect3_5[x]<-NA}
-  else if(dat$elec.top_5[x]>dat$elect.mostliked_5[x]) {dat$strat.elect3_5[x]<-1}
-  else if(dat$elec.top_5[x]==dat$elect.mostliked_5[x] & dat$therm.tie_5[x]>1) {dat$strat.elect3_5[x]<-1}
+  if(is.na(dat$elec.top3_5[x]) | is.na(dat$elect.mostliked_5[x]) | is.na(dat$therm.tie_5[x])) {dat$strat.elect3_5[x]<-NA}
+  else if(dat$elec.top3_5[x]>dat$elect.mostliked_5[x]) {dat$strat.elect3_5[x]<-1}
+  else if(dat$elec.top3_5[x]==dat$elect.mostliked_5[x] & dat$therm.tie_5[x]>1) {dat$strat.elect3_5[x]<-1}
   else {dat$strat.elect3_5[x]<-0}
 }
 
@@ -824,29 +824,26 @@ dat$end.date_5 <- ymd_hms(dat$ENDDT_W5)
 dat$second.half_5 <- ifelse(dat$wave45_W5==1 & dat$end.date_5<ymd("2020-03-04"), 0, 
                             ifelse(dat$wave45_W5==1 & dat$end.date_5>ymd("2020-03-04"), 1, NA))
 
-# Biden's relative ideological distance 
+# Identify electability/Viability conflicts
+##Wave 4
+dat$ev.conflict_4<-0
+dat$ev.conflict_4<-ifelse(dat$elect.biden_4==dat$via.biden_4, dat$ev.conflict_4, 1)
+dat$ev.conflict_4<-ifelse(dat$elect.harris_4==dat$via.harris_4, dat$ev.conflict_4, 1)
+dat$ev.conflict_4<-ifelse(dat$elect.sanders_4==dat$via.sanders_4, dat$ev.conflict_4, 1)
+dat$ev.conflict_4<-ifelse(dat$elect.warren_4==dat$via.warren_4, dat$ev.conflict_4, 1)
 
-##Wave 4 (1,4; 4=most distant)
-dat$biden.dist.rel_4<-NA
-for(x in 1:nrow(dat)){
-  working.vect<-unlist(matrix(dat[x,index.dist_4], ncol=1))
-  
-  if(length(which(dat$biden.dist_4[x]==sort(working.vect)))==0)
-  {dat$biden.dist.rel_4[x]<-NA}
-  else{dat$biden.dist.rel_4[x]<-which(dat$biden.dist_4[x]==sort(working.vect))}
-  
-}
+## Wave 5
+dat$ev.conflict_5<-0
+dat$ev.conflict_5<-ifelse(dat$elect2.biden_5==dat$via.biden_5, dat$ev.conflict_5, 1)
+dat$ev.conflict_5<-ifelse(dat$elect2.buttigieg_5==dat$via.buttigieg_5, dat$ev.conflict_5, 1)
+dat$ev.conflict_5<-ifelse(dat$elect2.sanders_5==dat$via.sanders_5, dat$ev.conflict_5, 1)
+dat$ev.conflict_5<-ifelse(dat$elect2.warren_5==dat$via.warren_5, dat$ev.conflict_5, 1)
+dat$ev.conflict_5<-ifelse(dat$elect2.bloomberg_5==dat$via.bloomberg_5, dat$ev.conflict_5, 1)
 
-## Wave 5 (1,5; 5=most distant)
-dat$biden.dist.rel_5<-NA
-for(x in 1:nrow(dat)){
-  working.vect<-unlist(matrix(dat[x,index.dist_5], ncol=1))
-  
-  if(length(which(dat$biden.dist_5[x]==sort(working.vect)))==0)
-  {dat$biden.dist.rel_5[x]<-NA}
-  else{dat$biden.dist.rel_5[x]<-which(dat$biden.dist_5[x]==sort(working.vect))}
-  
-}
+# Dichotomize Education
+dat$college_4<-ifelse(dat$EDUC4_W4==4, 1, 0)
+dat$college_5<-ifelse(dat$EDUC4_W5==4, 1, 0)
+
 ####Analyses####
 
 #Percentage of Respondents voting Strategically
@@ -854,6 +851,10 @@ for(x in 1:nrow(dat)){
 mean(dat$strat.elect_4, na.rm=T)
 mean(dat$strat.elect_5[dat$second.half_5==0], na.rm=T)
 mean(dat$strat.elect_5[dat$second.half_5==1], na.rm=T)
+
+### 3pt electability
+mean(dat$strat.elect3_5[dat$second.half_5==0], na.rm=T)
+mean(dat$strat.elect3_5[dat$second.half_5==1], na.rm=T)
 
 ##Viability
 mean(dat$strat.via_4, na.rm=T)
@@ -934,7 +935,13 @@ dat.biden5b <- dat.biden5b[!is.na(dat.biden5b$CaseId),]
 m.biden5a<-plm(formula=vote.biden~elect.biden+via.biden+therm10.biden+biden.dist, data=dat.biden5a,
     model='within', index='CaseId', type='individual')
 
+m.biden5a2<-plm(formula=therm10.biden~elect.biden+via.biden+biden.dist, data=dat.biden5a,
+               model='within', index='CaseId', type='individual')
+
 m.biden5b<-plm(formula=vote.biden~elect.biden+via.biden+therm10.biden+biden.dist, data=dat.biden5b,
+               model='within', index='CaseId', type='individual')
+
+m.biden5b2<-plm(formula=therm10.biden~elect.biden+via.biden+biden.dist, data=dat.biden5b,
                model='within', index='CaseId', type='individual')
 
 summary(m.biden5a)
@@ -942,6 +949,10 @@ summary(m.biden5b)
 
 stargazer(m.biden5a, m.biden5b, star.cutoffs = c(.05, .01, .001), 
           covariate.labels = c("Biden Electability", "Biden Viability", "Biden FT", "Biden Ideo Distance"))
+
+stargazer(m.biden5a2, m.biden5b2, star.cutoffs = c(.05, .01, .001), 
+          covariate.labels = c("Biden Electability", "Biden Viability", "Biden Ideo Distance"))
+
 
 colnames(dat.biden5a) <- gsub("\\.", "_", colnames(dat.biden5a))
 foreign::write.dta(dat.biden5a, file="Biden 4-5a.dta")
@@ -954,22 +965,57 @@ foreign::write.dta(dat.biden5b, file="Biden 4-5b.dta")
 m.elect.strat_4<-glm(strat.elect_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+interest_4+iss.pol_4+therm10.trump_4+way.life.threat_4, 
                       family='binomial', data=dat[(dat$wave45_W4==1  & dat$outlier_4==0),])
 
+m.elect.strat2_4<-glm(strat.elect_4~AGE7_W4+INCOME_W4+white.dum_4+male.dum_4+EDUC4_W4+interest_4+iss.pol_4+therm10.trump_4, 
+                     family='binomial', data=dat[(dat$wave45_W4==1  & dat$outlier_4==0),])
+
 m.elect.strat_5<-glm(strat.elect_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+interest_5+iss.pol_5+aff.pol_5+elite.ppolar_5+therm10.trump_5+way.life.threat_5, 
                      family='binomial', data=dat[(dat$wave45_W5==1 & dat$outlier_5==0),])
 
-stargazer(m.elect.strat_4, star.cutoffs = c(.05, .01, .001), 
-          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Ideo Extremity",  
-                               "Party ID", "Interest", "Issue Polar", "Perceived Polar",  
-                               "Trump Therm (10pt)", "Way of Life Threat"))
+m.elect.strat2_5<-glm(strat.elect_5~AGE7_W5+INCOME_W5+white.dum_5+male.dum_5+EDUC4_W5+interest_5+iss.pol_5+therm10.trump_5, 
+                     family='binomial', data=dat[(dat$wave45_W5==1 & dat$outlier_5==0),])
 
-stargazer(m.elect.strat_5, star.cutoffs = c(.05, .01, .001), 
-          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Ideo Extremity",  
-                               "Party ID", "Interest",  "Polar Index", 
-                               "Trump Therm (10pt)", "Way of Life Threat", "Second Half"))
+stargazer(m.elect.strat2_4, star.cutoffs = c(.05, .01, .001), 
+          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Interest",
+                               "Issue Polar", "Trump Therm (10pt)"))
+
+stargazer(m.elect.strat2_5, star.cutoffs = c(.05, .01, .001), 
+          covariate.labels = c("Age (7pt)", "Income", "White", "Male", "Edu (4pt)", "Interest",  
+                               "Issue Polar", "Trump Therm (10pt)"))
 
 ##Bivariate correlations with the DV
 ###Wave 4
 
+index.biv.cor_4<-c("AGE7_W4", "INCOME_W4", "white.dum_4", "male.dum_4", "EDUC4_W4", "interest_4", 
+                   "iss.pol_4", "therm10.trump_4", "way.life.threat_4")
+dat.biv.cor_4<-as_tibble(matrix(NA, ncol=3, nrow=length(index.biv.cor_4)))
+colnames(dat.biv.cor_4)<-c("Variable", "Correlation", "P-Value")
+dat.biv.cor_4[,1]<-index.biv.cor_4
+
+for(x in 1:length(index.biv.cor_4)){
+  txt<-paste("cor.test(dat$strat.elect_4, dat$", index.biv.cor_4[x], ")", sep="")
+  result<-eval(parse(text=txt))
+  dat.biv.cor_4[x,2]<-result$estimate
+  dat.biv.cor_4[x,3]<-result$p.value
+}
+
+cor.test(dat$college_4, dat$strat.elect_4)
+
+###Wave 5
+index.biv.cor_5<-c("AGE7_W5", "INCOME_W5", "white.dum_5", "male.dum_5", "EDUC4_W5", 
+                   "interest_5", "iss.pol_5", "aff.pol_5", "elite.ppolar_5", "therm10.trump_5", 
+                   "way.life.threat_5")
+dat.biv.cor_5<-as_tibble(matrix(NA, ncol=3, nrow=length(index.biv.cor_5)))
+colnames(dat.biv.cor_5)<-c("Variable", "Correlation", "P-Value")
+dat.biv.cor_5[,1]<-index.biv.cor_5
+
+for(x in 1:length(index.biv.cor_5)){
+  txt<-paste("cor.test(dat$strat.elect_5, dat$", index.biv.cor_5[x], ")", sep="")
+  result<-eval(parse(text=txt))
+  dat.biv.cor_5[x,2]<-result$estimate
+  dat.biv.cor_5[x,3]<-result$p.value
+}
+
+cor.test(dat$college_5, dat$strat.elect_5)
 
 # Therms with Outliers Removed
 hist(dat$therm10.trump_4[dat$outlier_4==0], ylab="Count", xlab="FT Score", main="Trump Therm (W4)")
@@ -1008,6 +1054,11 @@ summary(dat$male.dum_5[dat$outlier_5==1 & dat$second.half_5==1], na.rm=T)
 summary(dat$P_PARTYID7_W4[dat$outlier_4==1], na.rm=T)
 summary(dat$P_PARTYID7_W5[dat$outlier_5==1 & dat$second.half_5==0], na.rm=T)
 summary(dat$P_PARTYID7_W5[dat$outlier_5==1 & dat$second.half_5==1], na.rm=T)
+
+# Prevalence of electability/viability conflicts
+prop.table(table(dat$ev.conflict_4))
+prop.table(table(dat$ev.conflict_5[dat$second.half_5==0]))
+prop.table(table(dat$ev.conflict_5[dat$second.half_5==1]))
 
 #################################################
 ####NOT USED####
@@ -1070,4 +1121,27 @@ stargazer(m.predictors_4, m.predictors_5a, m.predictors_5b)
 stargazer(m.predictors_4.2)
 stargazer(m.predictors_5a.2, m.predictors_5b.2)
 
+# Biden's relative ideological distance 
+
+##Wave 4 (1,4; 4=most distant)
+dat$biden.dist.rel_4<-NA
+for(x in 1:nrow(dat)){
+  working.vect<-unlist(matrix(dat[x,index.dist_4], ncol=1))
+  
+  if(length(which(dat$biden.dist_4[x]==sort(working.vect)))==0)
+  {dat$biden.dist.rel_4[x]<-NA}
+  else{dat$biden.dist.rel_4[x]<-which(dat$biden.dist_4[x]==sort(working.vect))}
+  
+}
+
+## Wave 5 (1,5; 5=most distant)
+dat$biden.dist.rel_5<-NA
+for(x in 1:nrow(dat)){
+  working.vect<-unlist(matrix(dat[x,index.dist_5], ncol=1))
+  
+  if(length(which(dat$biden.dist_5[x]==sort(working.vect)))==0)
+  {dat$biden.dist.rel_5[x]<-NA}
+  else{dat$biden.dist.rel_5[x]<-which(dat$biden.dist_5[x]==sort(working.vect))}
+  
+}
 
